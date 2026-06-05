@@ -177,55 +177,9 @@
                     </button>
                 </div>
 
-                <!-- Scan Result Card -->
-                <div id="scan-result-card" class="bg-gradient-to-b from-slate-800 to-slate-800/50 border border-slate-700 rounded-3xl p-6 shadow-2xl space-y-5 hidden transform transition-all duration-300 origin-bottom">
-                    
-                    <div class="flex justify-between items-start">
-                        <div class="bg-brand-500/20 border border-brand-500/30 text-brand-300 text-[10px] font-bold uppercase px-3 py-1.5 rounded-full tracking-widest flex items-center space-x-1.5">
-                            <i class="fa-solid fa-circle-check text-brand-400"></i>
-                            <span>Ditemukan</span>
-                        </div>
-                        <button onclick="closeResultCard()" class="w-8 h-8 rounded-full bg-slate-700/50 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-600 transition-all">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                    </div>
-
-                    <!-- Product Details -->
-                    <div class="space-y-4">
-                        <div class="text-center">
-                            <p id="res-barcode" class="text-xs font-mono text-slate-400 tracking-widest mb-2">#6902395661139</p>
-                            <h2 id="res-nama" class="text-xl font-display font-bold text-white tracking-tight leading-snug">Nama Produk Akan Tampil Disini</h2>
-                        </div>
-
-                        <!-- Price Section -->
-                        <div class="bg-slate-900 rounded-2xl p-5 border border-slate-700/50 relative overflow-hidden shadow-inner">
-                            <div class="absolute -right-4 -bottom-4 opacity-10 text-brand-500">
-                                <i class="fa-solid fa-tags text-8xl"></i>
-                            </div>
-                            
-                            <div class="space-y-4 relative z-10">
-                                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                                    <span class="text-sm text-slate-400 font-medium">Harga Normal</span>
-                                    <span id="res-harga-jual" class="text-base font-semibold text-slate-500 line-through">Rp 0</span>
-                                </div>
-
-                                <div class="flex justify-between items-end">
-                                    <span class="text-sm text-slate-300 font-medium mb-1">Harga Setelah Diskon</span>
-                                    <div class="text-right">
-                                        <div id="res-disc-badge" class="inline-block bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded flex-shrink-0 mb-1 animate-pulse">
-                                            DISC 0%
-                                        </div>
-                                        <div id="res-harga-disc" class="text-3xl font-display font-bold text-accent-400">Rp 0</div>
-                                    </div>
-                                </div>
-
-                                <div class="pt-3 border-t border-slate-800 flex justify-between items-center bg-accent-500/10 -mx-5 -mb-5 p-4 mt-2">
-                                    <span class="text-sm font-medium text-accent-400 flex items-center"><i class="fa-solid fa-piggy-bank mr-2"></i>Anda Hemat</span>
-                                    <span id="res-hemat" class="text-lg font-bold text-accent-400">Rp 0</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <!-- Scan Results Container (Dynamic) -->
+                <div id="scan-results-container" class="space-y-5 hidden w-full">
+                    <!-- Cards will be injected here via JS -->
                 </div>
 
                 <!-- Info Help Card -->
@@ -725,89 +679,149 @@
                 return;
             }
 
-            // Clean barcode (handle potential leading zeros matching issues)
             const cleanSearch = String(barcode).trim();
+            if (!cleanSearch) return;
             
             // 1. Prioritaskan pencarian persis (exact match)
-            let item = database.find(p => String(p.barcode) === cleanSearch || String(p.barcode).replace(/^0+/, '') === cleanSearch.replace(/^0+/, ''));
+            let matchedItems = database.filter(p => String(p.barcode) === cleanSearch || String(p.barcode).replace(/^0+/, '') === cleanSearch.replace(/^0+/, ''));
             
-            // 2. Jika tidak ditemukan yang persis, cari yang mengandung angka tersebut (partial match)
-            if (!item) {
-                item = database.find(p => String(p.barcode).includes(cleanSearch));
+            // 2. Jika tidak ditemukan yang persis, cari semua yang mengandung angka tersebut (partial match)
+            if (matchedItems.length === 0) {
+                matchedItems = database.filter(p => String(p.barcode).includes(cleanSearch));
             }
             
-            const card = document.getElementById('scan-result-card');
+            const container = document.getElementById('scan-results-container');
             const helpCard = document.getElementById('help-card');
 
-            // Reset Card Animation Classes
-            card.classList.add('hidden', 'scale-95', 'opacity-0');
+            // Reset dan munculkan container hasil
+            container.innerHTML = '';
+            container.classList.remove('hidden');
+            helpCard.classList.add('hidden');
 
-            if (item) {
-                // Play logic
+            if (matchedItems.length > 0) {
                 playSuccessBeep();
+                
+                // Membatasi hasil yang tampil agar tidak lag jika terlalu banyak data yang cocok
+                const maxResults = 5;
+                const isTruncated = matchedItems.length > maxResults;
+                const itemsToDisplay = isTruncated ? matchedItems.slice(0, maxResults) : matchedItems;
 
-                // Calculate Saving
-                const saving = item.harga_jual - item.harga_disc;
-
-                // Update UI Data
-                document.getElementById('res-barcode').textContent = `#${item.barcode}`;
-                document.getElementById('res-nama').textContent = item.nama;
-                document.getElementById('res-harga-jual').textContent = `Rp ${formatRupiah(item.harga_jual)}`;
-                document.getElementById('res-harga-disc').textContent = `Rp ${formatRupiah(item.harga_disc)}`;
-                document.getElementById('res-hemat').textContent = `Rp ${formatRupiah(saving)}`;
-
-                // Cek apakah item.disc mengandung persen atau nominal Rupiah untuk Label
-                if (String(item.disc).includes('%') || item.disc === '0%') {
-                    document.getElementById('res-disc-badge').textContent = `DISC ${item.disc}`;
-                } else if (String(item.disc).includes('Rp')) {
-                    document.getElementById('res-disc-badge').textContent = `POTONGAN ${item.disc}`;
-                } else {
-                    document.getElementById('res-disc-badge').textContent = `${item.disc}`;
+                if (isTruncated) {
+                    showToast("Banyak Hasil", `Menampilkan ${maxResults} dari ${matchedItems.length} produk. Ketik nomor lebih lengkap untuk hasil yang spesifik.`, "info");
+                } else if (matchedItems.length > 1) {
+                    showToast("Beberapa Produk Ditemukan", `Ditemukan ${matchedItems.length} produk yang mengandung angka "${cleanSearch}".`, "success");
                 }
 
-                // Update Header Badge styling for Success
-                const headerBadge = card.querySelector('.flex.justify-between.items-start > div');
-                headerBadge.className = "bg-accent-500/20 border border-accent-500/30 text-accent-300 text-[10px] font-bold uppercase px-3 py-1.5 rounded-full tracking-widest flex items-center space-x-1.5";
-                headerBadge.innerHTML = `<i class="fa-solid fa-circle-check text-accent-400"></i><span>Ditemukan</span>`;
+                // Melakukan looping (perulangan) untuk membuat kartu hasil untuk setiap produk yang cocok
+                itemsToDisplay.forEach(item => {
+                    const saving = item.harga_jual - item.harga_disc;
+
+                    // Cek format label diskon
+                    let badgeText = item.disc;
+                    if (String(item.disc).includes('%') || item.disc === '0%') {
+                        badgeText = `DISC ${item.disc}`;
+                    } else if (String(item.disc).includes('Rp')) {
+                        badgeText = `POTONGAN ${item.disc}`;
+                    }
+
+                    const cardHTML = `
+                    <div class="bg-gradient-to-b from-slate-800 to-slate-800/50 border border-slate-700 rounded-3xl p-6 shadow-2xl space-y-5 mb-5 transform transition-all duration-300 origin-bottom animate-fade-in">
+                        <div class="flex justify-between items-start">
+                            <div class="bg-accent-500/20 border border-accent-500/30 text-accent-300 text-[10px] font-bold uppercase px-3 py-1.5 rounded-full tracking-widest flex items-center space-x-1.5">
+                                <i class="fa-solid fa-circle-check text-accent-400"></i>
+                                <span>Ditemukan</span>
+                            </div>
+                            <button onclick="closeResultCard()" class="w-8 h-8 rounded-full bg-slate-700/50 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-600 transition-all">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div class="text-center">
+                                <p class="text-xs font-mono text-slate-400 tracking-widest mb-2">#${item.barcode}</p>
+                                <h2 class="text-xl font-display font-bold text-white tracking-tight leading-snug">${item.nama}</h2>
+                            </div>
+
+                            <div class="bg-slate-900 rounded-2xl p-5 border border-slate-700/50 relative overflow-hidden shadow-inner">
+                                <div class="absolute -right-4 -bottom-4 opacity-10 text-brand-500">
+                                    <i class="fa-solid fa-tags text-8xl"></i>
+                                </div>
+                                
+                                <div class="space-y-4 relative z-10">
+                                    <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                                        <span class="text-sm text-slate-400 font-medium">Harga Normal</span>
+                                        <span class="text-base font-semibold text-slate-500 line-through">Rp ${formatRupiah(item.harga_jual)}</span>
+                                    </div>
+
+                                    <div class="flex justify-between items-end">
+                                        <span class="text-sm text-slate-300 font-medium mb-1">Harga Setelah Diskon</span>
+                                        <div class="text-right">
+                                            <div class="inline-block bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded flex-shrink-0 mb-1 animate-pulse">
+                                                ${badgeText}
+                                            </div>
+                                            <div class="text-3xl font-display font-bold text-accent-400">Rp ${formatRupiah(item.harga_disc)}</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="pt-3 border-t border-slate-800 flex justify-between items-center bg-accent-500/10 -mx-5 -mb-5 p-4 mt-2">
+                                        <span class="text-sm font-medium text-accent-400 flex items-center"><i class="fa-solid fa-piggy-bank mr-2"></i>Anda Hemat</span>
+                                        <span class="text-lg font-bold text-accent-400">Rp ${formatRupiah(saving)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    `;
+                    container.insertAdjacentHTML('beforeend', cardHTML);
+                });
 
             } else {
-                // Play logic
+                // Play error logic
                 playErrorBeep();
-                showToast("Tidak Ditemukan", `Barcode ${cleanSearch} tidak terdaftar.`, "error");
+                showToast("Tidak Ditemukan", `Barcode mengandung "${cleanSearch}" tidak terdaftar.`, "error");
 
-                // Update UI Data for Not Found
-                document.getElementById('res-barcode').textContent = `#${cleanSearch}`;
-                document.getElementById('res-nama').innerHTML = `<span class="text-rose-400">Produk Tidak Dikenal</span>`;
-                document.getElementById('res-harga-jual').textContent = `-`;
-                document.getElementById('res-harga-disc').textContent = `N/A`;
-                document.getElementById('res-disc-badge').textContent = `0%`;
-                document.getElementById('res-hemat').textContent = `-`;
-
-                // Update Header Badge styling for Error
-                const headerBadge = card.querySelector('.flex.justify-between.items-start > div');
-                headerBadge.className = "bg-rose-500/20 border border-rose-500/30 text-rose-300 text-[10px] font-bold uppercase px-3 py-1.5 rounded-full tracking-widest flex items-center space-x-1.5";
-                headerBadge.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-400"></i><span>Tidak Ditemukan</span>`;
+                // Inject Not Found Card
+                const notFoundHTML = `
+                <div class="bg-gradient-to-b from-slate-800 to-slate-800/50 border border-slate-700 rounded-3xl p-6 shadow-2xl space-y-5 transform transition-all duration-300 origin-bottom animate-fade-in">
+                    <div class="flex justify-between items-start">
+                        <div class="bg-rose-500/20 border border-rose-500/30 text-rose-300 text-[10px] font-bold uppercase px-3 py-1.5 rounded-full tracking-widest flex items-center space-x-1.5">
+                            <i class="fa-solid fa-triangle-exclamation text-rose-400"></i>
+                            <span>Tidak Ditemukan</span>
+                        </div>
+                        <button onclick="closeResultCard()" class="w-8 h-8 rounded-full bg-slate-700/50 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-600 transition-all">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="text-center">
+                            <p class="text-xs font-mono text-slate-400 tracking-widest mb-2">#${cleanSearch}</p>
+                            <h2 class="text-xl font-display font-bold text-rose-400 tracking-tight leading-snug">Produk Tidak Dikenal</h2>
+                        </div>
+                        <div class="bg-slate-900 rounded-2xl p-5 border border-slate-700/50 relative overflow-hidden shadow-inner opacity-60">
+                            <div class="text-center text-slate-400 font-medium text-sm">
+                                Pastikan kode barcode diinput dengan benar atau produk telah terdaftar di database Google Sheets.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                `;
+                container.insertAdjacentHTML('beforeend', notFoundHTML);
             }
-
-            // Animate In Result Card
-            card.classList.remove('hidden');
-            helpCard.classList.add('hidden');
-            
-            // Trigger reflow
-            void card.offsetWidth;
-            
-            card.classList.remove('scale-95', 'opacity-0');
         }
 
         function closeResultCard() {
-            const card = document.getElementById('scan-result-card');
+            const container = document.getElementById('scan-results-container');
             const helpCard = document.getElementById('help-card');
             
-            card.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => {
-                card.classList.add('hidden');
-                helpCard.classList.remove('hidden');
-            }, 300);
+            // Sembunyikan dan bersihkan kontainer hasil scan
+            container.classList.add('hidden');
+            container.innerHTML = '';
+            
+            // Tampilkan kembali kartu panduan
+            helpCard.classList.remove('hidden');
+            
+            // Bersihkan kolom pencarian
+            document.getElementById('manual-barcode-input').value = '';
         }
 
         // --- Navigation ---
