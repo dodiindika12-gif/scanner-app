@@ -210,7 +210,7 @@
                                 </div>
 
                                 <div class="flex justify-between items-end">
-                                    <span class="text-sm text-slate-300 font-medium mb-1">Harga Diskon</span>
+                                    <span class="text-sm text-slate-300 font-medium mb-1">Harga Setelah Diskon</span>
                                     <div class="text-right">
                                         <div id="res-disc-badge" class="inline-block bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded flex-shrink-0 mb-1 animate-pulse">
                                             DISC 0%
@@ -236,7 +236,7 @@
                     <div class="space-y-1.5">
                         <p class="text-sm font-semibold text-blue-300">Cara Pakai:</p>
                         <p class="text-xs text-slate-300 leading-relaxed">
-                            Ketuk <b>Nyalakan</b>, arahkan kamera ke barcode produk. Harga diskon akan otomatis dihitung berdasarkan database Google Sheets Anda.
+                            Ketuk <b>Nyalakan</b>, arahkan kamera ke barcode produk. Harga diskon akan otomatis dihitung berdasarkan database Google Sheets Anda. Bisa juga ketik sebagian nomor barcode di kolom pencarian.
                         </p>
                     </div>
                 </div>
@@ -369,7 +369,7 @@
         // Offline mock data fallback in case fetching fails
         const mockDatabase = [
             { barcode: "6902395661139", nama: "Susu UHT Ultra Milk Cokelat 250ml", harga_jual: 7500, disc: "10%", harga_disc: 6750 },
-            { barcode: "8999999002238", nama: "Indomie Goreng Spesial", harga_jual: 3500, disc: "15%", harga_disc: 2975 },
+            { barcode: "8999999002238", nama: "Indomie Goreng Spesial", harga_jual: 3500, disc: "Rp500", harga_disc: 3000 },
             { barcode: "8992636600121", nama: "Kopi Kenangan Mantan Bottle 220ml", harga_jual: 9800, disc: "0%", harga_disc: 9800 }
         ];
 
@@ -495,13 +495,23 @@
                     const nama = cells[1] && cells[1].v ? String(cells[1].v) : 'Unknown';
                     const harga_jual = cells[2] && cells[2].v ? parseFloat(cells[2].v) : 0;
                     
-                    // Handle discount format (e.g. 0.1 for 10% or string "10%")
-                    let discRaw = cells[3] && cells[3].v !== null ? cells[3].v : 0;
-                    let disc = String(discRaw);
-                    if (typeof discRaw === 'number' && discRaw < 1) {
-                        disc = (discRaw * 100) + "%"; // Convert 0.1 to "10%"
-                    } else if (!disc.includes('%')) {
-                        disc = disc + "%";
+                    // Handle discount format: Persen vs Potongan Harga (Nominal)
+                    let discVal = cells[3] && cells[3].v !== null ? cells[3].v : 0;
+                    let discFormatted = cells[3] && cells[3].f ? cells[3].f : String(discVal);
+                    let disc = "";
+                    
+                    if (discFormatted.includes('%')) {
+                        disc = discFormatted; // Mempertahankan format persentase
+                    } else {
+                        let nominal = parseFloat(discVal);
+                        if (!isNaN(nominal) && nominal > 0) {
+                            // Format sebagai nominal Rupiah jika tidak ada lambang %
+                            disc = "Rp" + formatRupiah(nominal);
+                        } else if (nominal === 0) {
+                            disc = "0%";
+                        } else {
+                            disc = discFormatted;
+                        }
                     }
 
                     const harga_disc = cells[4] && cells[4].v ? parseFloat(cells[4].v) : harga_jual;
@@ -558,6 +568,15 @@
 
             database.forEach(item => {
                 const saving = item.harga_jual - item.harga_disc;
+                
+                // Penentuan Teks Label Diskon untuk list view
+                let discText = item.disc;
+                if (String(item.disc).includes('%') || item.disc === '0%') {
+                    discText = `DISC ${item.disc}`;
+                } else if (String(item.disc).includes('Rp')) {
+                    discText = `POTONGAN ${item.disc}`;
+                }
+
                 const row = document.createElement('div');
                 row.className = "bg-slate-800 border border-slate-700/80 rounded-xl p-4 flex justify-between items-center hover:bg-slate-700/80 transition-all cursor-pointer";
                 row.onclick = () => selectItemFromDB(item.barcode);
@@ -573,7 +592,7 @@
                     </div>
                     <div class="text-right flex-shrink-0">
                         <span class="inline-block bg-rose-500 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm">
-                            ${item.disc}
+                            ${discText}
                         </span>
                     </div>
                 `;
@@ -735,8 +754,16 @@
                 document.getElementById('res-nama').textContent = item.nama;
                 document.getElementById('res-harga-jual').textContent = `Rp ${formatRupiah(item.harga_jual)}`;
                 document.getElementById('res-harga-disc').textContent = `Rp ${formatRupiah(item.harga_disc)}`;
-                document.getElementById('res-disc-badge').textContent = `DISC ${item.disc}`;
                 document.getElementById('res-hemat').textContent = `Rp ${formatRupiah(saving)}`;
+
+                // Cek apakah item.disc mengandung persen atau nominal Rupiah untuk Label
+                if (String(item.disc).includes('%') || item.disc === '0%') {
+                    document.getElementById('res-disc-badge').textContent = `DISC ${item.disc}`;
+                } else if (String(item.disc).includes('Rp')) {
+                    document.getElementById('res-disc-badge').textContent = `POTONGAN ${item.disc}`;
+                } else {
+                    document.getElementById('res-disc-badge').textContent = `${item.disc}`;
+                }
 
                 // Update Header Badge styling for Success
                 const headerBadge = card.querySelector('.flex.justify-between.items-start > div');
