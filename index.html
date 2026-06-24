@@ -1,863 +1,378 @@
 <!DOCTYPE html>
-<html lang="id" class="dark">
+<html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IM-SCANNER: Cek Harga Diskon</title>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Font Inter & Poppins -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@500;700;800&display=swap" rel="stylesheet">
-    
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
-    <!-- HTML5-QRCode Scanner Library -->
-    <script src="https://unpkg.com/html5-qrcode"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cek Harga & Promo</title>
+<style>
+  :root{
+    --primary:#E8559A; --accent:#D43F84; --bg:#F4F4F6; --panel:#FEFDFC; --card:#fff;
+    --success:#2Fa02d; --danger:#E65C53;
+    --text:rgba(0,0,0,.82); --text2:rgba(0,0,0,.52); --text3:rgba(0,0,0,.36);
+    --line:rgba(0,0,0,.10); --fill:rgba(0,0,0,.04); --fill2:rgba(0,0,0,.07);
+    --radius:14px;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#1f1f21; --panel:#2a2a2c; --card:#2e2e30; --primary:#E8559A; --accent:#F285B6;
+      --text:rgba(255,255,255,.88); --text2:rgba(255,255,255,.55); --text3:rgba(255,255,255,.38);
+      --line:rgba(255,255,255,.12); --fill:rgba(255,255,255,.05); --fill2:rgba(255,255,255,.09);
+      --success:#4ec24c;
+    }
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--bg);color:var(--text);line-height:1.5;padding:16px;
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:560px;margin:0 auto}
+  header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  header h1{font-size:18px;margin:0;font-weight:600}
+  .logo{width:34px;height:34px;border-radius:9px;background:var(--primary);
+    display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px}
 
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        display: ['Poppins', 'sans-serif'],
-                    },
-                    colors: {
-                        brand: {
-                            50: '#f5f3ff',
-                            100: '#ede9fe',
-                            400: '#a855f7',
-                            500: '#8b5cf6',
-                            600: '#7c3aed',
-                            700: '#6d28d9',
-                            DEFAULT: '#8b5cf6'
-                        },
-                        accent: {
-                            DEFAULT: '#10b981', // Emerald for success/savings
-                            400: '#34d399',
-                            500: '#10b981',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        body {
-            -webkit-tap-highlight-color: transparent;
-            overscroll-behavior-y: none; /* Prevent pull-to-refresh on mobile */
-        }
-        
-        /* Custom styling for standard scrollbars */
-        ::-webkit-scrollbar {
-            width: 4px;
-            height: 4px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #475569;
-            border-radius: 4px;
-        }
-        
-        /* Animation pulse for camera guide */
-        @keyframes scan-line {
-            0% { top: 0%; opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { top: 100%; opacity: 0; }
-        }
-        .scanner-line {
-            animation: scan-line 2.5s infinite linear;
-        }
+  /* Tab navigasi */
+  .tabs{display:flex;gap:4px;padding:4px;background:var(--fill2);border:.5px solid var(--line);
+    border-radius:12px;margin-bottom:16px}
+  .tab{flex:1;height:40px;border:0;background:transparent;color:var(--text2);
+    font-size:14px;font-weight:600;border-radius:9px;cursor:pointer;font-family:inherit;transition:.15s}
+  .tab.active{background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08)}
 
-        .glass-panel {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-    </style>
+  .page{display:none}
+  .page.active{display:block}
+
+  .panel{background:var(--panel);border:.5px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:14px}
+  .panel h2{font-size:13px;margin:0 0 10px;font-weight:600;color:var(--text2)}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  button,.btn{height:42px;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    padding:0 16px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;
+    border:.5px solid var(--line);background:var(--fill2);color:var(--text);transition:.15s;font-family:inherit}
+  button:hover,.btn:hover{background:var(--line)}
+  .btn-primary{background:var(--primary);color:#fff;border:0}
+  .btn-primary:hover{background:var(--accent)}
+  .field{flex:1;min-width:200px;height:42px;border-radius:10px;border:.5px solid var(--line);
+    background:var(--fill);color:var(--text);padding:0 12px;font-size:13px;outline:none;font-family:inherit}
+  .field:focus{border-color:var(--primary)}
+  .hint{font-size:12px;color:var(--text3);margin-top:10px}
+
+  /* Ringkasan data di Pengaturan */
+  .summary{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+  .stat{flex:1;min-width:120px;background:var(--fill);border-radius:10px;padding:12px 14px}
+  .stat .k{font-size:12px;color:var(--text3)}
+  .stat .v{font-size:18px;font-weight:600;margin-top:2px}
+
+  /* Halaman pencarian */
+  #scanInput{flex:1;min-width:180px;height:48px;border-radius:10px;border:.5px solid var(--line);
+    background:var(--fill);color:var(--text);padding:0 14px;font-size:17px;outline:none}
+  #scanInput:focus{border-color:var(--primary)}
+  #reader{width:100%;border-radius:10px;overflow:hidden;margin-top:12px;display:none}
+
+  .result{background:var(--card);border:.5px solid var(--line);border-radius:var(--radius);
+    padding:20px;min-height:160px;display:flex;flex-direction:column;justify-content:center}
+  .empty{align-items:center;text-align:center;color:var(--text3);font-size:14px}
+  .pname{font-size:20px;font-weight:600;margin-bottom:2px}
+  .pcode{font-size:12px;color:var(--text3);margin-bottom:16px}
+  .badge{display:inline-flex;align-items:center;height:26px;padding:0 12px;border-radius:999px;font-size:13px;font-weight:600}
+  .badge-promo{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);
+    border:.5px solid color-mix(in srgb,var(--accent) 28%,transparent)}
+  .badge-none{background:var(--fill2);color:var(--text2);border:.5px solid var(--line)}
+  .prices{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-top:6px}
+  .old{font-size:16px;color:var(--text3);text-decoration:line-through}
+  .now{font-size:36px;font-weight:700;line-height:1}
+  .now.promo{color:var(--accent)}
+  .save{display:inline-flex;align-items:center;height:28px;padding:0 12px;border-radius:999px;margin-top:16px;
+    font-size:13px;font-weight:600;background:color-mix(in srgb,var(--success) 16%,transparent);color:var(--success);
+    border:.5px solid color-mix(in srgb,var(--success) 30%,transparent)}
+  .notfound{color:var(--danger);text-align:center;font-size:15px}
+
+  .hist-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .hist-head h2{font-size:14px;margin:0;font-weight:600;color:var(--text2)}
+  .hist-clear{font-size:12px;color:var(--text3);background:none;border:0;height:auto;padding:4px}
+  .hist-item{display:flex;justify-content:space-between;gap:10px;padding:10px 0;
+    border-top:.5px solid var(--line);font-size:14px;cursor:pointer}
+  .hist-item:hover{color:var(--accent)}
+  .hist-item .h-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hist-item .h-price{font-weight:600;white-space:nowrap}
+</style>
 </head>
-<body class="bg-slate-900 text-slate-100 font-sans min-h-screen transition-colors duration-300 antialiased selection:bg-brand-500 selection:text-white">
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">₨</div>
+    <h1>Cek Harga &amp; Promo</h1>
+  </header>
 
-    <div class="max-w-md mx-auto min-h-screen flex flex-col justify-between pb-24 relative bg-slate-900 shadow-2xl overflow-hidden">
-        
-        <!-- Header -->
-        <header class="glass-panel sticky top-0 z-50 px-5 py-4 flex items-center justify-between border-b border-slate-800">
-            <div class="flex items-center space-x-3">
-                <div class="bg-gradient-to-br from-brand-500 to-blue-600 text-white p-2.5 rounded-xl shadow-lg shadow-brand-500/30 flex items-center justify-center">
-                    <i class="fa-solid fa-barcode text-xl"></i>
-                </div>
-                <div>
-                    <h1 class="font-display font-bold text-lg tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-blue-400 leading-none">IM-SCANNER</h1>
-                    <p class="text-[10px] text-slate-400 font-medium tracking-wider uppercase mt-0.5">Retail Price Checker</p>
-                </div>
-            </div>
-            
-            <div class="flex items-center space-x-3">
-                <!-- Sync Status Indicator -->
-                <button onclick="switchTab('settings')" id="sync-status" class="flex items-center space-x-1.5 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-full text-[11px] font-semibold text-slate-400 transition-all hover:bg-slate-700">
-                    <span class="w-2 h-2 rounded-full bg-slate-500"></span>
-                    <span>Offline</span>
-                </button>
-            </div>
-        </header>
+  <!-- Navigasi dua halaman -->
+  <nav class="tabs">
+    <button class="tab active" data-page="search" id="tabSearch">🔍 Pencarian</button>
+    <button class="tab" data-page="settings" id="tabSettings">⚙️ Pengaturan</button>
+  </nav>
 
-        <!-- Toast Container -->
-        <div id="toast-container" class="fixed top-20 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm z-50 flex flex-col items-center pointer-events-none space-y-2"></div>
-
-        <!-- Main Content Area -->
-        <main class="flex-grow p-4 relative z-10 overflow-y-auto">
-
-            <!-- TAB 1: SCANNER -->
-            <section id="tab-scanner" class="space-y-5 animate-fade-in">
-                
-                <!-- Camera Card -->
-                <div class="bg-slate-800/80 border border-slate-700 rounded-2xl overflow-hidden shadow-2xl relative">
-                    <div class="p-4 flex justify-between items-center bg-slate-800/90 border-b border-slate-700">
-                        <div class="flex items-center space-x-2">
-                            <i class="fa-solid fa-camera-retro text-slate-400"></i>
-                            <span class="text-sm font-semibold text-slate-200">Scanner Barcode</span>
-                        </div>
-                        <button id="btn-toggle-camera" onclick="toggleCamera()" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 active:bg-brand-700 text-xs text-white font-semibold rounded-xl shadow-lg shadow-brand-500/20 transition-all flex items-center space-x-2">
-                            <i class="fa-solid fa-power-off"></i>
-                            <span id="camera-btn-text">Nyalakan</span>
-                        </button>
-                    </div>
-
-                    <!-- Reader Screen -->
-                    <div class="relative bg-black aspect-square max-h-[350px] flex items-center justify-center overflow-hidden">
-                        <div id="reader" class="w-full h-full object-cover"></div>
-                        
-                        <!-- Overlay scanning indicator when active -->
-                        <div id="scan-overlay" class="absolute inset-0 pointer-events-none border-[20px] border-black/50 hidden flex-col justify-center items-center">
-                            <!-- Reticle -->
-                            <div class="w-3/4 h-32 border-2 border-brand-500/50 rounded-lg relative">
-                                <div class="absolute -top-1 -left-1 w-4 h-4 border-t-4 border-l-4 border-brand-400 rounded-tl"></div>
-                                <div class="absolute -top-1 -right-1 w-4 h-4 border-t-4 border-r-4 border-brand-400 rounded-tr"></div>
-                                <div class="absolute -bottom-1 -left-1 w-4 h-4 border-b-4 border-l-4 border-brand-400 rounded-bl"></div>
-                                <div class="absolute -bottom-1 -right-1 w-4 h-4 border-b-4 border-r-4 border-brand-400 rounded-br"></div>
-                                <!-- Scanning line -->
-                                <div class="absolute w-full h-[2px] bg-brand-400 shadow-[0_0_8px_2px_rgba(168,85,247,0.5)] scanner-line"></div>
-                            </div>
-                            <p class="absolute bottom-6 text-[10px] text-white/70 font-medium tracking-widest uppercase">Arahkan ke Barcode</p>
-                        </div>
-
-                        <!-- No camera message placeholder -->
-                        <div id="camera-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/95 text-center p-6 space-y-4">
-                            <div class="w-20 h-20 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-500 shadow-inner">
-                                <i class="fa-solid fa-qrcode text-4xl"></i>
-                            </div>
-                            <div>
-                                <p class="text-base font-semibold text-slate-200 mb-1">Kamera Nonaktif</p>
-                                <p class="text-xs text-slate-400 max-w-[220px] mx-auto leading-relaxed">Ketuk tombol 'Nyalakan' untuk mulai memindai harga produk.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Manual Input Barcode -->
-                <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-2 shadow-lg flex space-x-2">
-                    <div class="relative flex-grow">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
-                            <i class="fa-solid fa-keyboard text-sm"></i>
-                        </span>
-                        <input type="text" id="manual-barcode-input" placeholder="Ketik nomor barcode..." class="w-full bg-transparent border-none py-3 pl-11 pr-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-0">
-                    </div>
-                    <button onclick="handleManualSearch()" class="bg-slate-700 hover:bg-slate-600 active:bg-slate-800 text-white px-5 py-2 rounded-xl text-sm font-semibold transition-all">
-                        Cari
-                    </button>
-                </div>
-
-                <!-- Scan Results Container (Dynamic) -->
-                <div id="scan-results-container" class="space-y-5 hidden w-full">
-                    <!-- Cards will be injected here via JS -->
-                </div>
-
-                <!-- Info Help Card -->
-                <div id="help-card" class="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 flex items-start space-x-4 shadow-sm">
-                    <div class="bg-blue-500/20 text-blue-400 p-2.5 rounded-xl flex-shrink-0 mt-0.5">
-                        <i class="fa-solid fa-lightbulb"></i>
-                    </div>
-                    <div class="space-y-1.5">
-                        <p class="text-sm font-semibold text-blue-300">Cara Pakai:</p>
-                        <p class="text-xs text-slate-300 leading-relaxed">
-                            Ketuk <b>Nyalakan</b>, arahkan kamera ke barcode produk. Harga diskon akan otomatis dihitung berdasarkan database Google Sheets Anda. Bisa juga ketik sebagian nomor barcode di kolom pencarian.
-                        </p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- TAB 2: DATABASE -->
-            <section id="tab-database" class="space-y-4 hidden animate-fade-in">
-                <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-5 shadow-lg space-y-4">
-                    <div class="flex justify-between items-center">
-                        <h2 class="font-display font-bold text-base tracking-wide text-white flex items-center space-x-2">
-                            <i class="fa-solid fa-database text-brand-400"></i>
-                            <span>Master Data Produk</span>
-                        </h2>
-                        <span id="sku-count" class="bg-slate-700 text-slate-300 text-xs font-bold px-3 py-1 rounded-full">0 Item</span>
-                    </div>
-
-                    <!-- Live Search inside database -->
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
-                            <i class="fa-solid fa-magnifying-glass text-sm"></i>
-                        </span>
-                        <input type="text" id="db-search" oninput="filterDatabase()" placeholder="Cari nama atau barcode..." class="w-full bg-slate-900 border border-slate-700 rounded-xl py-3 pl-11 pr-4 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all">
-                    </div>
-                </div>
-
-                <!-- Product list scroll area -->
-                <div id="db-list-container" class="space-y-3 pb-6">
-                    <!-- Dynamic Rows will be inserted here -->
-                </div>
-            </section>
-
-            <!-- TAB 3: SETTINGS -->
-            <section id="tab-settings" class="space-y-5 hidden animate-fade-in">
-                
-                <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6 shadow-lg space-y-6">
-                    <div class="flex items-center space-x-3 border-b border-slate-700 pb-4">
-                        <div class="bg-brand-500/20 p-2 rounded-lg text-brand-400">
-                            <i class="fa-brands fa-google-drive text-xl"></i>
-                        </div>
-                        <div>
-                            <h2 class="font-display font-bold text-base text-white">Koneksi Google Sheets</h2>
-                            <p class="text-xs text-slate-400">Hubungkan database cloud Anda</p>
-                        </div>
-                    </div>
-
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-300 mb-2">Spreadsheet ID:</label>
-                            <input type="text" id="spreadsheet-id-input" value="1bJngcKpKx2t7LAgCuqbbDnK3ltn0eHwsUbrON4VDDEY" class="w-full bg-slate-900 border border-slate-700 rounded-xl py-3 px-4 text-sm text-white font-mono focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all">
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-300 mb-2">Nama Sheet (Tab):</label>
-                            <input type="text" id="sheet-name-input" value="Sheet1" class="w-full bg-slate-900 border border-slate-700 rounded-xl py-3 px-4 text-sm text-white focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all">
-                        </div>
-
-                        <button onclick="loadDatabaseFromSheet()" id="btn-sync" class="w-full bg-brand-600 hover:bg-brand-500 active:bg-brand-700 text-white font-bold py-3.5 px-4 rounded-xl text-sm transition-all shadow-lg shadow-brand-500/20 flex items-center justify-center space-x-2">
-                            <i class="fa-solid fa-rotate"></i>
-                            <span>Tarik Data Sekarang</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Instructions Card -->
-                <div class="bg-slate-800/50 border border-slate-700 rounded-2xl p-5 shadow-sm space-y-3">
-                    <h3 class="font-bold text-sm text-white flex items-center space-x-2">
-                        <i class="fa-solid fa-circle-info text-blue-400"></i>
-                        <span>Persyaratan Format Data</span>
-                    </h3>
-                    <p class="text-xs text-slate-400 leading-relaxed">
-                        Pastikan Google Sheet Anda dapat diakses publik (Viewer) dan memiliki kolom dengan urutan berikut (Baris pertama sebagai Header):
-                    </p>
-                    <div class="bg-slate-900 rounded-lg p-3 text-[10px] font-mono text-slate-300 border border-slate-800 overflow-x-auto">
-                        <table class="w-full text-left">
-                            <tr class="text-brand-300 border-b border-slate-700">
-                                <th class="pb-1 pr-2">A</th>
-                                <th class="pb-1 pr-2">B</th>
-                                <th class="pb-1 pr-2">C</th>
-                                <th class="pb-1 pr-2">D</th>
-                                <th class="pb-1">E</th>
-                            </tr>
-                            <tr>
-                                <td class="pt-1 pr-2">BARCODE</td>
-                                <td class="pt-1 pr-2">NAMA_PRODUK</td>
-                                <td class="pt-1 pr-2">H_JUAL</td>
-                                <td class="pt-1 pr-2">DISC</td>
-                                <td class="pt-1">HARGA_DISC</td>
-                            </tr>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-        </main>
-
-        <!-- Floating Navigation Bar -->
-        <nav class="glass-panel fixed bottom-0 left-0 w-full z-40 pb-safe pt-2 px-4 shadow-[0_-10px_40px_rgba(0,0,0,0.3)]">
-            <div class="max-w-md mx-auto flex justify-between items-center pb-4 pt-1">
-                <button onclick="switchTab('scanner')" id="nav-scanner" class="flex-1 flex flex-col items-center space-y-1.5 text-brand-400 font-semibold transition-all group">
-                    <div class="bg-brand-500/20 p-2.5 rounded-2xl group-hover:bg-brand-500/30 transition-colors">
-                        <i class="fa-solid fa-expand text-xl"></i>
-                    </div>
-                    <span class="text-[11px]">Scanner</span>
-                </button>
-                
-                <button onclick="switchTab('database')" id="nav-database" class="flex-1 flex flex-col items-center space-y-1.5 text-slate-500 hover:text-slate-300 transition-all group">
-                    <div class="p-2.5 rounded-2xl group-hover:bg-slate-800 transition-colors">
-                        <i class="fa-solid fa-box-open text-xl"></i>
-                    </div>
-                    <span class="text-[11px]">Produk</span>
-                </button>
-                
-                <button onclick="switchTab('settings')" id="nav-settings" class="flex-1 flex flex-col items-center space-y-1.5 text-slate-500 hover:text-slate-300 transition-all group">
-                    <div class="p-2.5 rounded-2xl group-hover:bg-slate-800 transition-colors">
-                        <i class="fa-solid fa-gear text-xl"></i>
-                    </div>
-                    <span class="text-[11px]">Setelan</span>
-                </button>
-            </div>
-        </nav>
-
+  <!-- ====== HALAMAN PENCARIAN ====== -->
+  <section class="page active" id="page-search">
+    <div class="panel">
+      <div class="row">
+        <input id="scanInput" inputmode="numeric" placeholder="Scan / ketik barcode lalu Enter" autocomplete="off">
+        <button class="btn-primary" id="scanBtn">Cek</button>
+        <button id="camBtn">📷 Kamera</button>
+      </div>
+      <div id="reader"></div>
+      <div class="hint" id="camHint" style="display:none">Arahkan barcode ke dalam kotak. Scan kamera butuh halaman dibuka via HTTPS atau localhost.</div>
     </div>
 
-    <script>
-        // --- State Management ---
-        let database = [];
-        let html5QrScanner = null;
-        let isCameraActive = false;
+    <div class="result empty" id="result">Scan atau masukkan barcode<br>untuk melihat harga &amp; promo</div>
 
-        // Offline mock data fallback in case fetching fails
-        const mockDatabase = [
-            { barcode: "6902395661139", nama: "Susu UHT Ultra Milk Cokelat 250ml", harga_jual: 7500, disc: "10%", harga_disc: 6750 },
-            { barcode: "8999999002238", nama: "Indomie Goreng Spesial", harga_jual: 3500, disc: "Rp500", harga_disc: 3000 },
-            { barcode: "8992636600121", nama: "Kopi Kenangan Mantan Bottle 220ml", harga_jual: 9800, disc: "0%", harga_disc: 9800 }
-        ];
+    <div class="panel" id="histPanel" style="display:none">
+      <div class="hist-head">
+        <h2>Riwayat Scan</h2>
+        <button class="hist-clear" id="histClear">Hapus</button>
+      </div>
+      <div id="histList"></div>
+    </div>
+  </section>
 
-        // --- Audio Feedback (Web Audio API) ---
-        function playTone(frequency, type, duration) {
-            try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioCtx.createOscillator();
-                const gainNode = audioCtx.createGain();
-                
-                oscillator.type = type;
-                oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
-                
-                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-                
-                oscillator.start();
-                oscillator.stop(audioCtx.currentTime + duration);
-            } catch (e) {
-                console.log("Audio play failed:", e);
-            }
-        }
+  <!-- ====== HALAMAN PENGATURAN ====== -->
+  <section class="page" id="page-settings">
+    <div class="panel">
+      <h2>Sumber Data — Google Sheet</h2>
+      <div class="row">
+        <input id="sheetUrl" class="field" placeholder="Tempel link Google Sheet di sini">
+        <button class="btn-primary" id="loadBtn">🔄 Muat</button>
+      </div>
+      <div class="hint">Sheet harus disetel <b>"Siapa saja yang memiliki link → Pelihat"</b>. Urutan kolom: barcode, nama produk, harga normal, mekanisme promo, harga setelah diskon.</div>
+    </div>
 
-        function playSuccessBeep() { playTone(880, 'sine', 0.15); } // High pitch beep
-        function playErrorBeep() { playTone(200, 'square', 0.3); } // Low pitch buzzer
+    <div class="panel">
+      <h2>Sumber Data — File</h2>
+      <div class="row">
+        <label class="btn" for="csvFile">📁 Upload CSV</label>
+        <input type="file" id="csvFile" accept=".csv,text/csv" hidden>
+        <button id="sampleBtn">Muat Data Contoh</button>
+      </div>
+    </div>
 
-        // --- Toast Notification System ---
-        function showToast(title, message, type = "info") {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            
-            let styleClasses = "bg-slate-800 border-slate-700 text-white shadow-xl";
-            let iconHtml = `<i class="fa-solid fa-info-circle text-blue-400 text-xl mt-0.5"></i>`;
-            
-            if (type === "success") {
-                styleClasses = "bg-accent-500/10 border-accent-500/30 text-accent-100 backdrop-blur-md";
-                iconHtml = `<i class="fa-solid fa-circle-check text-accent-400 text-xl mt-0.5"></i>`;
-            } else if (type === "error") {
-                styleClasses = "bg-rose-500/10 border-rose-500/30 text-rose-100 backdrop-blur-md";
-                iconHtml = `<i class="fa-solid fa-triangle-exclamation text-rose-400 text-xl mt-0.5"></i>`;
-            } else if (type === "warning") {
-                styleClasses = "bg-amber-500/10 border-amber-500/30 text-amber-100 backdrop-blur-md";
-                iconHtml = `<i class="fa-solid fa-circle-exclamation text-amber-400 text-xl mt-0.5"></i>`;
-            }
+    <div class="panel">
+      <h2>Status</h2>
+      <div class="summary">
+        <div class="stat"><div class="k">Jumlah produk</div><div class="v" id="statCount">0</div></div>
+        <div class="stat"><div class="k">Sumber</div><div class="v" id="statSource" style="font-size:14px">—</div></div>
+        <div class="stat"><div class="k">Sinkron terakhir</div><div class="v" id="statTime" style="font-size:14px">—</div></div>
+      </div>
+      <div class="hint" id="statusText">Belum ada data dimuat.</div>
+    </div>
+  </section>
+</div>
 
-            toast.className = `w-full p-4 rounded-2xl border flex items-start space-x-3 transform transition-all duration-300 translate-y-[-20px] opacity-0 ${styleClasses}`;
-            toast.innerHTML = `
-                ${iconHtml}
-                <div class="flex-1">
-                    <h4 class="text-sm font-bold leading-tight">${title}</h4>
-                    ${message ? `<p class="text-xs opacity-80 mt-1 leading-snug">${message}</p>` : ''}
-                </div>
-            `;
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+(function(){
+  "use strict";
 
-            container.appendChild(toast);
-            
-            // Animate In
-            requestAnimationFrame(() => {
-                toast.classList.remove('translate-y-[-20px]', 'opacity-0');
-            });
+  const DEFAULT_SHEET="https://docs.google.com/spreadsheets/d/1AKGZUcVM9-pPqNdbVABcKJ_-tV8wFggfgH6XMWVyG3I/edit?usp=sharing";
+  const SAMPLE=[
+    {barcode:'8998009010019',name:'Indomie Goreng 85g',normal:3500,promo:'Beli 2 Gratis 1',final:2333},
+    {barcode:'8992753110014',name:'Teh Botol Sosro 350ml',normal:4000,promo:'Diskon 20%',final:3200},
+    {barcode:'8993175537018',name:'Aqua Botol 600ml',normal:3500,promo:'Tanpa Promo',final:3500}
+  ];
 
-            // Auto Remove
-            setTimeout(() => {
-                toast.classList.add('translate-y-[-20px]', 'opacity-0');
-                setTimeout(() => toast.remove(), 300);
-            }, 3500);
-        }
+  let products=[], index={}, history=[], currentPage='search';
 
-        // --- Formatter Utility ---
-        function formatRupiah(number) {
-            return new Intl.NumberFormat('id-ID').format(number);
-        }
+  const $=id=>document.getElementById(id);
+  const rp=n=>'Rp'+(Number(n)||0).toLocaleString('id-ID');
+  const toNum=s=>parseInt(String(s==null?'':s).replace(/[^\d]/g,''),10)||0;
+  const escapeHtml=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-        // --- Google Sheets Data Fetching ---
-        async function loadDatabaseFromSheet() {
-            const spreadsheetId = document.getElementById('spreadsheet-id-input').value.trim();
-            const sheetName = document.getElementById('sheet-name-input').value.trim();
-            const syncStatusBtn = document.getElementById('sync-status');
-            const btnSync = document.getElementById('btn-sync');
-            
-            if (!spreadsheetId) {
-                showToast("ID Kosong", "Silakan masukkan ID Spreadsheet Anda.", "warning");
-                return;
-            }
+  /* ---------- Navigasi halaman ---------- */
+  function showPage(name){
+    currentPage=name;
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    $('page-'+name).classList.add('active');
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.page===name));
+    if(name==='search') setTimeout(()=>$('scanInput').focus(),50);
+  }
 
-            // UI Loading State
-            const originalBtnHtml = btnSync.innerHTML;
-            btnSync.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i><span>Menyinkronkan...</span>`;
-            btnSync.disabled = true;
-            
-            syncStatusBtn.className = "flex items-center space-x-1.5 bg-amber-500/10 border border-amber-500/30 px-3 py-1.5 rounded-full text-[11px] font-semibold text-amber-400 animate-pulse";
-            syncStatusBtn.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400"></span><span>Menyelaraskan</span>`;
+  /* ---------- Data & status ---------- */
+  function buildIndex(){ index={}; products.forEach(p=>index[p.barcode]=p); }
+  function setProducts(arr,source){
+    products=arr; buildIndex();
+    $('statCount').textContent=arr.length;
+    $('statSource').textContent=source||'—';
+    const now=new Date();
+    $('statTime').textContent=now.toLocaleDateString('id-ID')+' '+now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+    try{
+      localStorage.setItem('ckCatalog',JSON.stringify(arr));
+      localStorage.setItem('ckSource',source||'');
+    }catch(e){}
+  }
+  function status(m){ $('statusText').textContent=m; }
 
-            try {
-                // Fetch data using Google Visualization API endpoint for JSON output
-                const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
-                const response = await fetch(url);
-                
-                if (!response.ok) throw new Error("Gagal mengambil data. Pastikan Sheet bersifat Publik.");
-                
-                const text = await response.text();
-                // Extract JSON object from the function wrapper
-                const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);/);
-                if (!match) throw new Error("Format respon tidak valid. Apakah ID sudah benar?");
-                
-                const json = JSON.parse(match[1]);
-                const rows = json.table.rows;
-                
-                if (!rows || rows.length <= 1) { // 1 row means only header might exist
-                    throw new Error("Data produk tidak ditemukan di Sheet tersebut.");
-                }
+  /* ---------- Google Sheet -> URL CSV ---------- */
+  function toCsvUrl(url){
+    const m=String(url).match(/\/spreadsheets\/d\/([A-Za-z0-9_-]+)/);
+    if(!m) return null;
+    const id=m[1];
+    const g=String(url).match(/[#&?]gid=(\d+)/);
+    let u='https://docs.google.com/spreadsheets/d/'+id+'/gviz/tq?tqx=out:csv';
+    if(g) u+='&gid='+g[1];
+    return u;
+  }
+  async function loadFromSheet(url,fromUser){
+    const csvUrl=toCsvUrl(url);
+    if(!csvUrl){ status('URL Google Sheet tidak valid.'); return; }
+    status('Memuat dari Google Sheet...');
+    try{
+      const res=await fetch(csvUrl,{cache:'no-store'});
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const text=await res.text();
+      if(/^\s*</.test(text) || /accounts\.google\.com|Sign in|Temukan akun/i.test(text)) throw new Error('private');
+      const rows=parseCSV(text);
+      if(!rows.length) throw new Error('empty');
+      setProducts(rows,'Google Sheet');
+      try{ localStorage.setItem('ckSheetUrl',url); }catch(e){}
+      status('Berhasil memuat '+rows.length+' produk dari Google Sheet.');
+      showEmpty();
+      if(fromUser) showPage('search');
+    }catch(err){
+      if(err.message==='private') status('Akses ditolak — set sheet ke "Siapa saja dengan link: Pelihat", lalu coba lagi.');
+      else if(err.message==='empty') status('Sheet terbaca tapi kosong / kolom tidak sesuai.');
+      else status('Gagal memuat (cek koneksi/HTTPS). Pakai Upload CSV sebagai cadangan.');
+      const saved=loadCache(); if(saved && !products.length) setProducts(saved,'Cache offline');
+    }
+  }
+  function loadCache(){ try{ const s=JSON.parse(localStorage.getItem('ckCatalog')||'null'); return (s&&s.length)?s:null; }catch(e){ return null; } }
 
-                // Map data assuming Columns: 0=Barcode, 1=Nama, 2=Harga Jual, 3=Diskon, 4=Harga Diskon
-                const newDatabase = [];
-                for (let i = 1; i < rows.length; i++) { // Skip header (row 0)
-                    const cells = rows[i].c;
-                    if (!cells || !cells[0] || cells[0].v === null) continue; // Skip empty rows
+  /* ---------- Parser CSV ---------- */
+  function parseLine(line,delim){
+    const out=[]; let cur='',q=false;
+    for(let i=0;i<line.length;i++){
+      const ch=line[i];
+      if(q){ if(ch==='"'){ if(line[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=ch; }
+      else { if(ch==='"')q=true; else if(ch===delim){out.push(cur);cur='';} else cur+=ch; }
+    }
+    out.push(cur); return out;
+  }
+  function parseCSV(text){
+    text=text.replace(/^\uFEFF/,'');
+    const lines=text.split(/\r\n|\n|\r/).filter(l=>l.trim().length);
+    if(!lines.length) return [];
+    const head=lines[0];
+    const delim=((head.match(/;/g)||[]).length > (head.match(/,/g)||[]).length) ? ';' : ',';
+    const start=/barcode/i.test(head)?1:0;
+    const rows=[];
+    for(let i=start;i<lines.length;i++){
+      const c=parseLine(lines[i],delim);
+      const code=(c[0]||'').trim();
+      if(!code) continue;
+      const normal=toNum(c[2]);
+      const hasFinal=c[4]!=null&&String(c[4]).trim()!=='';
+      rows.push({
+        barcode:code, name:(c[1]||'').trim()||'Tanpa nama', normal:normal,
+        promo:(c[3]||'').trim()||'Tanpa Promo', final:hasFinal?toNum(c[4]):normal
+      });
+    }
+    return rows;
+  }
 
-                    const barcode = String(cells[0].v).trim();
-                    const nama = cells[1] && cells[1].v ? String(cells[1].v) : 'Unknown';
-                    const harga_jual = cells[2] && cells[2].v ? parseFloat(cells[2].v) : 0;
-                    
-                    // Handle discount format: Persen vs Potongan Harga (Nominal)
-                    let discVal = cells[3] && cells[3].v !== null ? cells[3].v : 0;
-                    let discFormatted = cells[3] && cells[3].f ? cells[3].f : String(discVal);
-                    let disc = "";
-                    
-                    if (discFormatted.includes('%')) {
-                        disc = discFormatted; // Mempertahankan format persentase
-                    } else {
-                        let nominal = parseFloat(discVal);
-                        if (!isNaN(nominal) && nominal > 0) {
-                            // Format sebagai nominal Rupiah jika tidak ada lambang %
-                            disc = "Rp" + formatRupiah(nominal);
-                        } else if (nominal === 0) {
-                            disc = "0%";
-                        } else {
-                            disc = discFormatted;
-                        }
-                    }
+  /* ---------- Render hasil ---------- */
+  function showEmpty(){ const r=$('result'); r.className='result empty';
+    r.innerHTML='Scan atau masukkan barcode<br>untuk melihat harga &amp; promo'; }
+  function showNotFound(code){ const r=$('result'); r.className='result';
+    r.innerHTML='<div class="notfound">Barcode <b>'+escapeHtml(code)+'</b><br>tidak ditemukan di data</div>'; }
+  function showProduct(p){
+    const save=p.normal-p.final, pct=p.normal>0?Math.round(save/p.normal*100):0, promo=save>0;
+    const r=$('result'); r.className='result';
+    r.innerHTML=
+      '<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap">'
+        +'<div class="pname">'+escapeHtml(p.name)+'</div>'
+        +'<span class="badge '+(promo?'badge-promo':'badge-none')+'">'+escapeHtml(promo?p.promo:'Tanpa Promo')+'</span>'
+      +'</div>'
+      +'<div class="pcode">Barcode: '+escapeHtml(p.barcode)+'</div>'
+      +'<div class="prices">'+(promo?'<span class="old">'+rp(p.normal)+'</span>':'')
+        +'<span class="now '+(promo?'promo':'')+'">'+rp(promo?p.final:p.normal)+'</span></div>'
+      +(promo?'<div><span class="save">Hemat '+rp(save)+' ('+pct+'%)</span></div>':'');
+  }
 
-                    const harga_disc = cells[4] && cells[4].v ? parseFloat(cells[4].v) : harga_jual;
+  /* ---------- Pencarian, riwayat, bunyi ---------- */
+  let lastCode='', lastTime=0;
+  function lookup(code){
+    code=String(code||'').trim(); if(!code){showEmpty();return;}
+    const p=index[code];
+    if(p){ showProduct(p); addHistory(p); beep(true); } else { showNotFound(code); beep(false); }
+  }
+  function addHistory(p){
+    history.unshift({barcode:p.barcode,name:p.name,price:(p.normal-p.final>0?p.final:p.normal)});
+    history=history.slice(0,10);
+    try{ localStorage.setItem('ckHistory',JSON.stringify(history)); }catch(e){}
+    renderHistory();
+  }
+  function renderHistory(){
+    const panel=$('histPanel'), list=$('histList');
+    if(!history.length){ panel.style.display='none'; return; }
+    panel.style.display='block';
+    list.innerHTML=history.map(h=>'<div class="hist-item" data-code="'+escapeHtml(h.barcode)+'">'
+      +'<span class="h-name">'+escapeHtml(h.name)+'</span><span class="h-price">'+rp(h.price)+'</span></div>').join('');
+  }
+  let actx=null;
+  function beep(ok){
+    try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+      const o=actx.createOscillator(), g=actx.createGain(); o.connect(g); g.connect(actx.destination);
+      o.frequency.value=ok?880:220; o.type='sine';
+      g.gain.setValueAtTime(0.12,actx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001,actx.currentTime+0.18);
+      o.start(); o.stop(actx.currentTime+0.18);
+    }catch(e){}
+  }
 
-                    if (barcode) {
-                        newDatabase.push({ barcode, nama, harga_jual, disc, harga_disc });
-                    }
-                }
+  /* ---------- Kamera ---------- */
+  let qr=null, camOn=false;
+  function toggleCam(){
+    if(typeof Html5Qrcode==='undefined'){ alert('Pustaka kamera gagal dimuat. Periksa koneksi internet.'); return; }
+    camOn?stopCam():startCam();
+  }
+  function startCam(){
+    $('reader').style.display='block'; $('camHint').style.display='block';
+    qr=new Html5Qrcode("reader");
+    qr.start({facingMode:"environment"},{fps:10,qrbox:{width:260,height:160}},decoded=>{
+      const now=Date.now(); if(decoded===lastCode && now-lastTime<1500) return;
+      lastCode=decoded; lastTime=now; $('scanInput').value=decoded; lookup(decoded);
+    }).then(()=>{ camOn=true; $('camBtn').textContent='⏹ Stop'; })
+      .catch(err=>{ alert('Tidak bisa membuka kamera: '+err); $('reader').style.display='none'; });
+  }
+  function stopCam(){
+    if(qr){ qr.stop().then(()=>qr.clear()).catch(()=>{}); }
+    camOn=false; $('camBtn').textContent='📷 Kamera'; $('reader').style.display='none'; $('camHint').style.display='none';
+  }
 
-                database = newDatabase;
-                document.getElementById('sku-count').textContent = `${database.length} Item`;
-                
-                // UI Success State
-                syncStatusBtn.className = "flex items-center space-x-1.5 bg-accent-500/10 border border-accent-500/30 px-3 py-1.5 rounded-full text-[11px] font-semibold text-accent-400";
-                syncStatusBtn.innerHTML = `<span class="w-2 h-2 rounded-full bg-accent-400"></span><span>Online (${database.length})</span>`;
-                
-                showToast("Sinkronisasi Berhasil", `${database.length} produk berhasil dimuat dari Google Sheets.`, "success");
-                buildDatabaseView();
-                
-            } catch (error) {
-                console.error("Fetch Error:", error);
-                showToast("Koneksi Gagal", error.message || "Gagal menghubungi Google Sheets. Cek ID dan akses publik.", "error");
-                
-                // Fallback UI
-                syncStatusBtn.className = "flex items-center space-x-1.5 bg-rose-500/10 border border-rose-500/30 px-3 py-1.5 rounded-full text-[11px] font-semibold text-rose-400";
-                syncStatusBtn.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-400"></span><span>Offline (Gagal)</span>`;
-                
-                // Load fallback if DB is empty
-                if (database.length === 0) {
-                    database = [...mockDatabase];
-                    buildDatabaseView();
-                }
-            } finally {
-                btnSync.innerHTML = originalBtnHtml;
-                btnSync.disabled = false;
-            }
-        }
+  /* ---------- Event ---------- */
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>showPage(t.dataset.page)));
+  $('scanBtn').addEventListener('click',()=>lookup($('scanInput').value));
+  $('scanInput').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); lookup($('scanInput').value); }});
+  $('camBtn').addEventListener('click',toggleCam);
+  $('loadBtn').addEventListener('click',()=>loadFromSheet($('sheetUrl').value,true));
+  $('sampleBtn').addEventListener('click',()=>{ setProducts(SAMPLE.slice(),'Data contoh'); status('Data contoh dimuat.'); showEmpty(); showPage('search'); });
+  $('histClear').addEventListener('click',()=>{ history=[]; try{localStorage.removeItem('ckHistory');}catch(e){} renderHistory(); });
+  $('histList').addEventListener('click',e=>{ const it=e.target.closest('.hist-item'); if(!it)return; $('scanInput').value=it.dataset.code; lookup(it.dataset.code); });
+  $('csvFile').addEventListener('change',e=>{
+    const f=e.target.files&&e.target.files[0]; if(!f)return;
+    const reader=new FileReader();
+    reader.onload=ev=>{ const rows=parseCSV(String(ev.target.result||''));
+      if(rows.length){ setProducts(rows,'File CSV ('+f.name+')'); status('Berhasil memuat '+rows.length+' produk dari '+f.name); showEmpty(); showPage('search'); }
+      else status('CSV kosong / format tidak terbaca.'); };
+    reader.readAsText(f);
+  });
+  document.addEventListener('click',e=>{
+    if(currentPage==='search' && !camOn && !['INPUT','BUTTON','LABEL'].includes(e.target.tagName)) $('scanInput').focus();
+  });
 
-        // --- Database View ---
-        function buildDatabaseView() {
-            const container = document.getElementById('db-list-container');
-            container.innerHTML = '';
-
-            if (database.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-12 text-slate-500 bg-slate-800/50 rounded-xl border border-slate-700 border-dashed">
-                        <i class="fa-solid fa-box-open text-4xl mb-3 text-slate-600"></i>
-                        <p class="text-sm font-medium">Data masih kosong</p>
-                        <p class="text-xs mt-1">Lakukan sinkronisasi di menu Setelan.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            database.forEach(item => {
-                const saving = item.harga_jual - item.harga_disc;
-                
-                // Penentuan Teks Label Diskon untuk list view
-                let discText = item.disc;
-                if (String(item.disc).includes('%') || item.disc === '0%') {
-                    discText = `DISC ${item.disc}`;
-                } else if (String(item.disc).includes('Rp')) {
-                    discText = `POTONGAN ${item.disc}`;
-                }
-
-                const row = document.createElement('div');
-                row.className = "bg-slate-800 border border-slate-700/80 rounded-xl p-4 flex justify-between items-center hover:bg-slate-700/80 transition-all cursor-pointer";
-                row.onclick = () => selectItemFromDB(item.barcode);
-                
-                row.innerHTML = `
-                    <div class="flex-1 min-w-0 pr-4">
-                        <p class="text-[10px] font-mono text-brand-400 mb-0.5"><i class="fa-solid fa-barcode mr-1"></i>${item.barcode}</p>
-                        <h4 class="text-sm font-bold text-slate-200 truncate leading-tight">${item.nama}</h4>
-                        <div class="flex items-center space-x-2 mt-1">
-                            <span class="text-xs text-slate-500 line-through">Rp${formatRupiah(item.harga_jual)}</span>
-                            <span class="text-sm font-bold text-accent-400">Rp${formatRupiah(item.harga_disc)}</span>
-                        </div>
-                    </div>
-                    <div class="text-right flex-shrink-0">
-                        <span class="inline-block bg-rose-500 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm">
-                            ${discText}
-                        </span>
-                    </div>
-                `;
-                container.appendChild(row);
-            });
-        }
-
-        function filterDatabase() {
-            const query = document.getElementById('db-search').value.toLowerCase();
-            const rows = document.getElementById('db-list-container').children;
-            
-            Array.from(rows).forEach((row, idx) => {
-                if (database[idx]) {
-                    const matchName = database[idx].nama.toLowerCase().includes(query);
-                    const matchBarcode = String(database[idx].barcode).toLowerCase().includes(query);
-                    if (matchName || matchBarcode) {
-                        row.classList.remove('hidden');
-                    } else {
-                        row.classList.add('hidden');
-                    }
-                }
-            });
-        }
-
-        function selectItemFromDB(barcode) {
-            switchTab('scanner');
-            document.getElementById('manual-barcode-input').value = barcode;
-            handleManualSearch();
-        }
-
-        // --- Scanner Logic (HTML5-QRCode) ---
-        function toggleCamera() {
-            if (isCameraActive) {
-                stopCamera();
-            } else {
-                startCamera();
-            }
-        }
-
-        function startCamera() {
-            document.getElementById('camera-placeholder').classList.add('hidden');
-            document.getElementById('scan-overlay').classList.remove('hidden');
-            document.getElementById('scan-overlay').classList.add('flex');
-            
-            html5QrScanner = new Html5Qrcode("reader");
-            const config = {
-                fps: 10,
-                qrbox: (width, height) => {
-                    // Rectangular box suitable for 1D barcodes
-                    const rectWidth = Math.min(width * 0.8, 350);
-                    const rectHeight = Math.min(height * 0.35, 120);
-                    return { width: rectWidth, height: rectHeight };
-                },
-                aspectRatio: 1.0,
-                disableFlip: false
-            };
-
-            html5QrScanner.start(
-                { facingMode: "environment" },
-                config,
-                onScanSuccess,
-                onScanError
-            ).then(() => {
-                isCameraActive = true;
-                const btn = document.getElementById('btn-toggle-camera');
-                btn.className = "px-4 py-2 bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-xs text-white font-semibold rounded-xl shadow-lg shadow-rose-500/20 transition-all flex items-center space-x-2";
-                btn.innerHTML = `<i class="fa-solid fa-camera-rotate"></i><span>Matikan</span>`;
-                showToast("Kamera Aktif", "Silakan arahkan barcode ke area kotak target.", "info");
-            }).catch(err => {
-                console.error("Camera error:", err);
-                showToast("Kamera Gagal", "Pastikan Anda memberikan izin akses kamera ke browser.", "error");
-                stopCamera();
-            });
-        }
-
-        function stopCamera() {
-            if (html5QrScanner) {
-                html5QrScanner.stop().then(() => {
-                    html5QrScanner = null;
-                    resetCameraUI();
-                }).catch(err => {
-                    resetCameraUI();
-                });
-            } else {
-                resetCameraUI();
-            }
-        }
-
-        function resetCameraUI() {
-            isCameraActive = false;
-            document.getElementById('camera-placeholder').classList.remove('hidden');
-            document.getElementById('scan-overlay').classList.add('hidden');
-            document.getElementById('scan-overlay').classList.remove('flex');
-            
-            const btn = document.getElementById('btn-toggle-camera');
-            btn.className = "px-4 py-2 bg-brand-600 hover:bg-brand-500 active:bg-brand-700 text-xs text-white font-semibold rounded-xl shadow-lg shadow-brand-500/20 transition-all flex items-center space-x-2";
-            btn.innerHTML = `<i class="fa-solid fa-power-off"></i><span>Nyalakan</span>`;
-        }
-
-        function onScanSuccess(decodedText) {
-            // Provide immediate feedback
-            playSuccessBeep();
-            
-            // Stop scanning to process result
-            stopCamera();
-            
-            // Populate input
-            document.getElementById('manual-barcode-input').value = decodedText;
-            
-            // Lookup
-            lookUpBarcode(decodedText);
-        }
-
-        function onScanError(errorMessage) {
-            // Ignored silently to not spam console/UI while searching for focus
-        }
-
-        function handleManualSearch() {
-            const barcode = document.getElementById('manual-barcode-input').value.trim();
-            if (!barcode) {
-                showToast("Input Kosong", "Masukkan nomor barcode terlebih dahulu.", "warning");
-                return;
-            }
-            lookUpBarcode(barcode);
-        }
-
-        function lookUpBarcode(barcode) {
-            if (database.length === 0) {
-                showToast("Database Kosong", "Harap sinkronkan data di tab Setelan terlebih dahulu.", "warning");
-                return;
-            }
-
-            const cleanSearch = String(barcode).trim();
-            if (!cleanSearch) return;
-            
-            // 1. Prioritaskan pencarian persis (exact match)
-            let matchedItems = database.filter(p => String(p.barcode) === cleanSearch || String(p.barcode).replace(/^0+/, '') === cleanSearch.replace(/^0+/, ''));
-            
-            // 2. Jika tidak ditemukan yang persis, cari semua yang mengandung angka tersebut (partial match)
-            if (matchedItems.length === 0) {
-                matchedItems = database.filter(p => String(p.barcode).includes(cleanSearch));
-            }
-            
-            const container = document.getElementById('scan-results-container');
-            const helpCard = document.getElementById('help-card');
-
-            // Reset dan munculkan container hasil
-            container.innerHTML = '';
-            container.classList.remove('hidden');
-            helpCard.classList.add('hidden');
-
-            if (matchedItems.length > 0) {
-                playSuccessBeep();
-                
-                // Membatasi hasil yang tampil agar tidak lag jika terlalu banyak data yang cocok
-                const maxResults = 5;
-                const isTruncated = matchedItems.length > maxResults;
-                const itemsToDisplay = isTruncated ? matchedItems.slice(0, maxResults) : matchedItems;
-
-                if (isTruncated) {
-                    showToast("Banyak Hasil", `Menampilkan ${maxResults} dari ${matchedItems.length} produk. Ketik nomor lebih lengkap untuk hasil yang spesifik.`, "info");
-                } else if (matchedItems.length > 1) {
-                    showToast("Beberapa Produk Ditemukan", `Ditemukan ${matchedItems.length} produk yang mengandung angka "${cleanSearch}".`, "success");
-                }
-
-                // Melakukan looping (perulangan) untuk membuat kartu hasil untuk setiap produk yang cocok
-                itemsToDisplay.forEach(item => {
-                    const saving = item.harga_jual - item.harga_disc;
-
-                    // Cek format label diskon
-                    let badgeText = item.disc;
-                    if (String(item.disc).includes('%') || item.disc === '0%') {
-                        badgeText = `DISC ${item.disc}`;
-                    } else if (String(item.disc).includes('Rp')) {
-                        badgeText = `POTONGAN ${item.disc}`;
-                    }
-
-                    const cardHTML = `
-                    <div class="bg-gradient-to-b from-slate-800 to-slate-800/50 border border-slate-700 rounded-3xl p-6 shadow-2xl space-y-5 mb-5 transform transition-all duration-300 origin-bottom animate-fade-in">
-                        <div class="flex justify-between items-start">
-                            <div class="bg-accent-500/20 border border-accent-500/30 text-accent-300 text-[10px] font-bold uppercase px-3 py-1.5 rounded-full tracking-widest flex items-center space-x-1.5">
-                                <i class="fa-solid fa-circle-check text-accent-400"></i>
-                                <span>Ditemukan</span>
-                            </div>
-                            <button onclick="closeResultCard()" class="w-8 h-8 rounded-full bg-slate-700/50 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-600 transition-all">
-                                <i class="fa-solid fa-xmark"></i>
-                            </button>
-                        </div>
-
-                        <div class="space-y-4">
-                            <div class="text-center">
-                                <p class="text-xs font-mono text-slate-400 tracking-widest mb-2">#${item.barcode}</p>
-                                <h2 class="text-xl font-display font-bold text-white tracking-tight leading-snug">${item.nama}</h2>
-                            </div>
-
-                            <div class="bg-slate-900 rounded-2xl p-5 border border-slate-700/50 relative overflow-hidden shadow-inner">
-                                <div class="absolute -right-4 -bottom-4 opacity-10 text-brand-500">
-                                    <i class="fa-solid fa-tags text-8xl"></i>
-                                </div>
-                                
-                                <div class="space-y-4 relative z-10">
-                                    <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                                        <span class="text-sm text-slate-400 font-medium">Harga Normal</span>
-                                        <span class="text-base font-semibold text-slate-500 line-through">Rp ${formatRupiah(item.harga_jual)}</span>
-                                    </div>
-
-                                    <div class="flex justify-between items-end">
-                                        <span class="text-sm text-slate-300 font-medium mb-1">Harga Setelah Diskon</span>
-                                        <div class="text-right">
-                                            <div class="inline-block bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded flex-shrink-0 mb-1 animate-pulse">
-                                                ${badgeText}
-                                            </div>
-                                            <div class="text-3xl font-display font-bold text-accent-400">Rp ${formatRupiah(item.harga_disc)}</div>
-                                        </div>
-                                    </div>
-
-                                    <div class="pt-3 border-t border-slate-800 flex justify-between items-center bg-accent-500/10 -mx-5 -mb-5 p-4 mt-2">
-                                        <span class="text-sm font-medium text-accent-400 flex items-center"><i class="fa-solid fa-piggy-bank mr-2"></i>Anda Hemat</span>
-                                        <span class="text-lg font-bold text-accent-400">Rp ${formatRupiah(saving)}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    `;
-                    container.insertAdjacentHTML('beforeend', cardHTML);
-                });
-
-            } else {
-                // Play error logic
-                playErrorBeep();
-                showToast("Tidak Ditemukan", `Barcode mengandung "${cleanSearch}" tidak terdaftar.`, "error");
-
-                // Inject Not Found Card
-                const notFoundHTML = `
-                <div class="bg-gradient-to-b from-slate-800 to-slate-800/50 border border-slate-700 rounded-3xl p-6 shadow-2xl space-y-5 transform transition-all duration-300 origin-bottom animate-fade-in">
-                    <div class="flex justify-between items-start">
-                        <div class="bg-rose-500/20 border border-rose-500/30 text-rose-300 text-[10px] font-bold uppercase px-3 py-1.5 rounded-full tracking-widest flex items-center space-x-1.5">
-                            <i class="fa-solid fa-triangle-exclamation text-rose-400"></i>
-                            <span>Tidak Ditemukan</span>
-                        </div>
-                        <button onclick="closeResultCard()" class="w-8 h-8 rounded-full bg-slate-700/50 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-600 transition-all">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                    </div>
-                    <div class="space-y-4">
-                        <div class="text-center">
-                            <p class="text-xs font-mono text-slate-400 tracking-widest mb-2">#${cleanSearch}</p>
-                            <h2 class="text-xl font-display font-bold text-rose-400 tracking-tight leading-snug">Produk Tidak Dikenal</h2>
-                        </div>
-                        <div class="bg-slate-900 rounded-2xl p-5 border border-slate-700/50 relative overflow-hidden shadow-inner opacity-60">
-                            <div class="text-center text-slate-400 font-medium text-sm">
-                                Pastikan kode barcode diinput dengan benar atau produk telah terdaftar di database Google Sheets.
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                `;
-                container.insertAdjacentHTML('beforeend', notFoundHTML);
-            }
-        }
-
-        function closeResultCard() {
-            const container = document.getElementById('scan-results-container');
-            const helpCard = document.getElementById('help-card');
-            
-            // Sembunyikan dan bersihkan kontainer hasil scan
-            container.classList.add('hidden');
-            container.innerHTML = '';
-            
-            // Tampilkan kembali kartu panduan
-            helpCard.classList.remove('hidden');
-            
-            // Bersihkan kolom pencarian
-            document.getElementById('manual-barcode-input').value = '';
-        }
-
-        // --- Navigation ---
-        function switchTab(tabId) {
-            // If leaving scanner tab, turn off camera to save battery
-            if (tabId !== 'scanner' && isCameraActive) {
-                stopCamera();
-            }
-
-            // Hide all
-            ['scanner', 'database', 'settings'].forEach(id => {
-                document.getElementById(`tab-${id}`).classList.add('hidden');
-                
-                // Reset Nav UI
-                const btn = document.getElementById(`nav-${id}`);
-                btn.className = "flex-1 flex flex-col items-center space-y-1.5 text-slate-500 hover:text-slate-300 transition-all group";
-                const iconContainer = btn.querySelector('div');
-                iconContainer.className = "p-2.5 rounded-2xl group-hover:bg-slate-800 transition-colors";
-            });
-
-            // Show selected
-            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
-            
-            // Active Nav UI
-            const activeBtn = document.getElementById(`nav-${tabId}`);
-            activeBtn.className = "flex-1 flex flex-col items-center space-y-1.5 text-brand-400 font-semibold transition-all group";
-            const activeIconContainer = activeBtn.querySelector('div');
-            activeIconContainer.className = "bg-brand-500/20 p-2.5 rounded-2xl group-hover:bg-brand-500/30 transition-colors shadow-inner";
-        }
-
-        // Initialize on load
-        window.addEventListener('DOMContentLoaded', () => {
-            // Automatically fetch the provided Google Sheet ID on start
-            loadDatabaseFromSheet();
-        });
-
-    </script>
+  /* ---------- Init ---------- */
+  let savedUrl=DEFAULT_SHEET;
+  try{
+    const u=localStorage.getItem('ckSheetUrl'); if(u) savedUrl=u;
+    const h=JSON.parse(localStorage.getItem('ckHistory')||'null'); if(h) history=h;
+    const c=loadCache(); if(c) setProducts(c, localStorage.getItem('ckSource')||'Cache offline');
+  }catch(e){}
+  $('sheetUrl').value=savedUrl;
+  renderHistory(); showEmpty(); showPage('search');
+  loadFromSheet(savedUrl,false);
+})();
+</script>
 </body>
 </html>
